@@ -29,4 +29,8 @@ open class Book(var bookName: String?, var BookId: Int) : Parcelable {
             return arrayOfNulls(size)
         }
     }
+
+    override fun toString(): String {
+        return " [BookName:$bookName ; BookId : $BookId ] "
+    }
 }

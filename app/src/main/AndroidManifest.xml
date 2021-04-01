@@ -9,7 +9,13 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AIDLTest">
-        <activity android:name=".MainActivity">
+        <service
+            android:name=".BookManagerService"
+            android:enabled="true"
+            android:exported="true"
+            android:process=":remote"></service>
+
+        <activity android:name=".BookManagerActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
