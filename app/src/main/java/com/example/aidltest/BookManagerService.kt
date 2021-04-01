@@ -3,6 +3,7 @@ package com.example.aidltest
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
+import android.os.RemoteCallbackList
 import android.util.Log
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
@@ -16,7 +17,8 @@ open class BookManagerService : Service() {
     private var mIsServiceDestoryed = AtomicBoolean(false)
 
     //订阅者列表
-    private var mListenerList = CopyOnWriteArrayList<IOnNewBookArrivedListener>();
+    //RemoteCallbackList是系统专门提供的用于删除跨进程 listener 的接口
+    private var mListenerList = RemoteCallbackList<IOnNewBookArrivedListener>();
 
     private val  mBinder = object : IBookManager.Stub(){
         override fun getBookList(): MutableList<Book> {
@@ -28,22 +30,11 @@ open class BookManagerService : Service() {
         }
 
         override fun registerListener(listener: IOnNewBookArrivedListener?) {
-            if(!mListenerList.contains(listener)){
-                mListenerList.add(listener)
-            }else{
-                Log.d(TAG,"$listener always existed")
-            }
-            Log.d(TAG,"registerListener,size:${mListenerList.size}")
+            mListenerList.register(listener)
         }
 
         override fun unregisterListener(listener: IOnNewBookArrivedListener?) {
-            if(mListenerList.contains(listener)){
-                mListenerList.remove(listener)
-                Log.d(TAG,"unregister success.")
-            }else{
-                Log.d(TAG,"not found,can not unregister.")
-            }
-            Log.d(TAG,"unregisterListener,size:${mListenerList.size}")
+            mListenerList.unregister(listener)
         }
 
 
@@ -69,12 +60,13 @@ open class BookManagerService : Service() {
     //通知订阅者新书已到达
     private fun onNewBookArrived(book:Book){
         mBookList.add(book)
-        Log.d(TAG,"onNewBookArrived,notify listeners:${mListenerList.size}")
-        for(i in 0 until mListenerList.size){
-            var listener = mListenerList.get(i)
-            Log.d(TAG,"OnNewBookArrived,notify listener:$listener")
-            listener.onNewBookArrived(book)
+
+        var N = mListenerList.beginBroadcast()
+        for(i in 0 until N ){
+            var listener = mListenerList.getBroadcastItem(i)
+            listener?.onNewBookArrived(book)
         }
+        mListenerList.finishBroadcast()
     }
 
     private inner class ServiceWorker : Runnable{
